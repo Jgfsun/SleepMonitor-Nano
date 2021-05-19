@@ -11,7 +11,7 @@ from tensorflow.python.layers.core import Dense
 from tensorflow.contrib.seq2seq.python.ops import beam_search_decoder
 import threading
 from PyQt5.QtWidgets import *
-from utils import epoch_buffer, batch_data, flatten,sample_arr,filter, down_sample, print_n_samples_each_class
+from utils import epoch_buffer, batch_data, flatten, sample_arr, filter, down_sample, print_n_samples_each_class
 from eeg_ui3 import MainDialogImgBW
 # from inlet import *
 from inlet import save_data
@@ -19,6 +19,7 @@ from inlet import save_data
 filter_buffer = []
 pre_labels = []
 sample_rate = 100
+
 
 # output :network
 def build_firstPart_model(input_var, keep_prob_=0.5):
@@ -296,7 +297,7 @@ def run_program(hparams, FLAGS):
     char2numY['<SOD>'] = len(char2numY)
     char2numY['<EOD>'] = len(char2numY)
     # Placeholders
-    inputs = tf.placeholder(tf.float32, [None, hparams.max_time_step, hparams.input_depth], name='inputs')
+    inputs = tf.placeholder(tf.float32, [1, hparams.max_time_step, hparams.input_depth], name='inputs')
     targets = tf.placeholder(tf.int32, (None, None), 'targets')
     dec_inputs = tf.placeholder(tf.int32, (None, None), 'decoder_inputs')
     keep_prob_ = tf.placeholder(tf.float32, name='keep')
@@ -319,16 +320,17 @@ def run_program(hparams, FLAGS):
         if epoch_buffer.get_raw_data_state(i):
             raw_data = epoch_buffer.get_raw_data(i)  # filtered raw data type=list
             i = i + 1
-            filter_buffer = filter_buffer + raw_data    # save dict x
+            filter_buffer = filter_buffer + raw_data  # save dict x
             # down sample: 1.self-defined method 2.signal.resample
             # data = down_sample(raw_data)
             data = signal.resample(raw_data, 3000)  # type=array
             # normalize each 30s sample such that each has zero mean and unit variance
             tmp_data = np.reshape(data, (1, 3000))
-            tmp_data = (tmp_data - np.expand_dims(tmp_data.mean(axis=1), axis=1)) / np.expand_dims(tmp_data.std(axis=1),axis=1)
+            tmp_data = (tmp_data - np.expand_dims(tmp_data.mean(axis=1), axis=1)) / np.expand_dims(tmp_data.std(axis=1),
+                                                                                                   axis=1)
             x = np.reshape(tmp_data, (1, 1, 3000))  # predict: input the normalized data (1,1,3000)
             y_pred, y_list = evaluate_model(hparams, x)  # type list
-            pre_labels = pre_labels + y_list    # save dict y
+            pre_labels = pre_labels + y_list  # save dict y
             print_n_samples_each_class(y_pred, classes)
             epoch_buffer.set_label(y_list)
             if time.time() - start_timestamp >= 600:
@@ -343,7 +345,8 @@ def run_program(hparams, FLAGS):
                 save_file = os.path.join("./results", filename)
                 np.savez(save_file, **save_dict)
                 print("save success!")
-                j = j+1
+                j = j + 1
+
 
 def main(args=None):
     FLAGS = tf.app.flags.FLAGS
@@ -368,7 +371,7 @@ def main(args=None):
         beam_width=4,
         use_beamsearch_decode=False,
         max_time_step=1,  # 5 3 second best 10# 40 # 100 这里就设置为 1 即可
-        output_max_length=10 + 2,  # max_time_step +1
+        output_max_length=1 + 2,  # max_time_step +1
         akara2017=True,
         test_step=5,  # each 10 epochs
     )

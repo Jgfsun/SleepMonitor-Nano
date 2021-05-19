@@ -26,7 +26,7 @@ def save_data():
                 down_sample = signal.resample(filter_list, 100)  # down sample
                 epoch_buffer.set_raw_data(filter_list)  # save filter data
                 epoch_buffer.set_data(down_sample.tolist())  # save down sample
-                # print(down_sample.shape)
+                # print(down_sample[0])
             time.sleep(1)
 
 def main():

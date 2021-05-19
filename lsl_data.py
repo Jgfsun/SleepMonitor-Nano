@@ -27,7 +27,7 @@ print("now sending data...")
 
 
 def lsl_streamers(sample):
-    print np.array(sample.channels_data) * SCALE_FACTOR_EEG
+    print (np.array(sample.channels_data) * SCALE_FACTOR_EEG)
 
     outlet_eeg.push_sample(np.array(sample.channels_data) * SCALE_FACTOR_EEG)
     # print(np.array(sample.channels_data) * SCALE_FACTOR_EEG)

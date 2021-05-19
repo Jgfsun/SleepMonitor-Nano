@@ -2,7 +2,7 @@
 import numpy as np
 import tensorflow as tf
 from scipy import signal
-
+from scipy.interpolate import UnivariateSpline
 
 class EpochBuffer:
     def __init__(self, fixed_length=400):
@@ -11,7 +11,7 @@ class EpochBuffer:
         self.tmp_data = []  # 3000
         self.buffer_2 = []  # down sample data
         self.sample_rate = 100
-        self.fixed_list = [0 for i in range(fixed_length+10)]
+        self.fixed_list = [0 for i in range(fixed_length + 10)]
         self.blank = [0 for i in range(10)]
 
     def set(self, data, label, sample_rate):
@@ -46,12 +46,12 @@ class EpochBuffer:
             return False
 
     def get_data(self, fixed_length, moved_length, f_m_ratio, i):
-        # return self.buffer_2[0: 400], self.sample_rate
+        f_m_ratio = int(f_m_ratio)
         a = i % f_m_ratio
         b = i // f_m_ratio * fixed_length
-        y = self.buffer_2[b + moved_length * a : moved_length * (1 + a) + b] + self.blank
-        self.fixed_list[moved_length * a:moved_length * (1 + a)+10] = y
-        return self.fixed_list, self.sample_rate
+        y = self.buffer_2[b + moved_length * a: moved_length * (1 + a) + b] + self.blank
+        self.fixed_list[moved_length * a:moved_length * (1 + a) + 10] = y
+        return self.fixed_list, self.sample_rate, self.buffer_2[i * moved_length: i * moved_length + 100]
 
     # 如果buffer_2的数据 ≥ index * 100就返回True
     def get_data_state(self, index, moved_length):
@@ -72,10 +72,11 @@ class EpochBuffer:
     def print_information(self):
         print(len(self.buffer), len(self.labels), self.sample_rate)
 
-    def get_filter_rhythm(self, l_f=4, h_f=8,):# 1/2 * sample_rate = 50
-        b, a = signal.butter(8, [l_f/50.0, h_f/50.0], btype='bandpass', analog=False)  # 4Hz-8Hz
+    def get_filter_rhythm(self, l_f=4, h_f=8, ):  # 1/2 * sample_rate = 50
+        b, a = signal.butter(8, [l_f / 50.0, h_f / 50.0], btype='bandpass', analog=False)  # 4Hz-8Hz
         filter_data = signal.filtfilt(b, a, np.array(self.fixed_list))  # numpy.ndarray
         return filter_data.tolist()
+
 
 epoch_buffer = EpochBuffer(400)
 
@@ -105,7 +106,7 @@ def flatten(name, input_var):
     return output_var
 
 
-def sample_arr(sample, channel=1):
+def sample_arr(sample, channel=2):
     tmp = []
     for i in range(len(sample)):
         tmp.append(sample[i][channel - 1])
@@ -117,10 +118,14 @@ def filter(data):
     # filter_detrend = signal.detrend(data)   # baseline drift
     notch_b, notch_a = signal.iirnotch(0.4, 30.0)
     filter_data_1 = signal.filtfilt(notch_b, notch_a, data)
-    b, a = signal.butter(8, [0.008, 0.8], btype='bandpass', analog=False)  # 1Hz-100Hz
+    b, a = signal.butter(8, [0.008, 0.4], btype='bandpass', analog=False)  # 1Hz-50Hz
     filter_data_2 = signal.filtfilt(b, a, filter_data_1)  # numpy.ndarray
-    data_list = filter_data_2.tolist()  # list
-    return data_list
+    # smooth
+    s_x = np.linspace(0, len(filter_data_2)-1, len(filter_data_2))
+    spl = UnivariateSpline(s_x, filter_data_2, s=2)
+    spl.set_smoothing_factor(0.5)
+    data_list = spl(s_x)  # list
+    return data_list.tolist()
 
 
 def down_sample(data_list):
