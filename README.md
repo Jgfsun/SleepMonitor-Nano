@@ -1,7 +1,7 @@
 自动睡眠分期系统实现：使用OpenBCI设备通过Lab Streaming Layer (LSL)与部署在Jetson NANO上的深度神经网络进行数据通信并分期结果显示，从而构建睡眠分期实时监测系统。
 
 
-[视频演示](https://www.bilibili.com/video/BV1cA411F739/?spm_id_from=333.999.0.0)
+[视频演示](https://www.bilibili.com/video/BV1xezqYXEfF/?vd_source=a926e651d46d2729275ca5fcdd636cf6)
 
 
 **Python 版本2.7.17**
